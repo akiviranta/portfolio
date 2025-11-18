@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics, useSphere, usePlane } from '@react-three/cannon';
 import * as THREE from 'three';
+import RobotArm from './RoboArm';
 
 // Configuration
 const CONFIG = {
@@ -225,6 +226,7 @@ const App = () => {
         <Physics gravity={[0, -20, 0]}>
           <Ground />
           <Ball />
+          <RobotArm position={[20, 0, 20]}></RobotArm>
         </Physics>
       </Canvas>
 
