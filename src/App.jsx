@@ -1,18 +1,29 @@
 import React, { useRef, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, useSphere, usePlane } from '@react-three/cannon';
 import * as THREE from 'three';
 
-// ==================== CONFIGURATION ====================
-const TEXTURES = {
-  ground: '#000000',      // Dark blue-gray
-  ball: '#00ff88',        // Cyan-green
-  gridColor: '#ffffff',   // Cyan
+// Configuration
+const CONFIG = {
+  world: {
+    size: 100,
+    color: '#000000',
+  },
+  ball: {
+    radius: 2,
+    color: '#cccccc',
+    emissiveIntensity: 1,
+    lightIntensity: 500,
+    lightDistance: 30,
+    speed: 20,
+  },
+  camera: {
+    position: [0, 15, 20],
+    fov: 60,
+  },
 };
 
-// ==================== COMPONENTS ====================
-
-// Ground plane
+// Ground
 const Ground = () => {
   const [ref] = usePlane(() => ({
     rotation: [-Math.PI / 2, 0, 0],
@@ -20,26 +31,24 @@ const Ground = () => {
   }));
 
   return (
-    <mesh ref={ref} receiveShadow>
-      <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial 
-        color="#000000"
-        roughness={0.8}
-        metalness={0}
-      />
+    <mesh ref={ref}>
+      <planeGeometry args={[CONFIG.world.size, CONFIG.world.size]} />
+      <meshStandardMaterial color={CONFIG.world.color} />
     </mesh>
   );
 };
 
-// Player ball
+// Player ball with light
 const Ball = () => {
-  const [ref, api] = useSphere(() => ({
+  const [physicsRef, api] = useSphere(() => ({
     mass: 1,
-    args: [1],
+    args: [CONFIG.ball.radius],
     position: [0, 2, 0],
   }));
 
-  const meshRef = useRef();
+  const visualRef = useRef();
+  const directionalLightRef = useRef();
+  const positionRef = useRef([0, 2, 0]);
   const keys = useRef({ w: false, a: false, s: false, d: false });
 
   useEffect(() => {
@@ -55,88 +64,89 @@ const Ball = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = api.position.subscribe((p) => {
+      positionRef.current = p;
+    });
+    return unsubscribe;
+  }, [api]);
+
   useFrame(() => {
-    const speed = 20;
     let vx = 0;
     let vz = 0;
 
-    if (keys.current.w) vz -= speed;
-    if (keys.current.s) vz += speed;
-    if (keys.current.a) vx -= speed;
-    if (keys.current.d) vx += speed;
+    if (keys.current.w) vz -= CONFIG.ball.speed;
+    if (keys.current.s) vz += CONFIG.ball.speed;
+    if (keys.current.a) vx -= CONFIG.ball.speed;
+    if (keys.current.d) vx += CONFIG.ball.speed;
 
     api.velocity.set(vx, 0, vz);
 
-    // Sync mesh with physics body
-    if (ref.current) {
-      meshRef.current.position.copy(ref.current.position);
-      meshRef.current.quaternion.copy(ref.current.quaternion);
-    }
+    // Update visual position and rotation
+    if (visualRef.current) {
+      visualRef.current.position.set(...positionRef.current);
 
-    // Rolling animation based on velocity
-    if (meshRef.current) {
       const velocityMagnitude = Math.sqrt(vx * vx + vz * vz);
-      const rollAxis = new THREE.Vector3(-vz, 0, vx).normalize();
-      const rollSpeed = velocityMagnitude * 0.05;
-      
-      const quaternion = new THREE.Quaternion();
-      quaternion.setFromAxisAngle(rollAxis, rollSpeed);
-      meshRef.current.quaternion.multiplyQuaternions(quaternion, meshRef.current.quaternion);
+      if (velocityMagnitude > 0) {
+        const rollSpeed = velocityMagnitude * 0.01;
+        visualRef.current.rotateOnAxis(new THREE.Vector3(-vz, 0, vx).normalize(), rollSpeed);
+
+        // Position directional light in movement direction
+        if (directionalLightRef.current) {
+          const lightDistance = CONFIG.ball.radius * 3;
+          directionalLightRef.current.position.set(vx, 0, vz).normalize().multiplyScalar(lightDistance);
+        }
+      }
     }
   });
 
   return (
-    <>
-      <pointLight position={[0, 0, 0]} intensity={2} distance={30} color="#ffffff" />
-      <mesh ref={ref} castShadow>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial 
-          color={TEXTURES.ball}
-          emissive="#00ff88"
-          emissiveIntensity={0.5}
+    <group ref={visualRef}>
+      <pointLight
+        intensity={CONFIG.ball.lightIntensity}
+        distance={CONFIG.ball.lightDistance}
+        color={CONFIG.ball.color}
+      />
+      <directionalLight
+        ref={directionalLightRef}
+        intensity={2}
+        color="#ffffff"
+      />
+      <mesh>
+        <sphereGeometry args={[CONFIG.ball.radius, 32, 32]} />
+        <meshStandardMaterial
+          color={CONFIG.ball.color}
+          emissive={CONFIG.ball.color}
+          emissiveIntensity={0.3}
+          roughness={0.7}
         />
       </mesh>
-    </>
+      <mesh ref={physicsRef} visible={false}>
+        <sphereGeometry args={[CONFIG.ball.radius]} />
+      </mesh>
+    </group>
   );
 };
 
-// ==================== MAIN APP ====================
 const App = () => {
   return (
     <div style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden' }}>
-      <Canvas 
-        shadows 
-        camera={{ position: [0, 15, 20], fov: 60 }}
-        style={{ width: '100%', height: '100%' }}
+      <Canvas
+        camera={{ position: CONFIG.camera.position, fov: CONFIG.camera.fov }}
+        style={{ width: '100%', height: '100%', background: CONFIG.world.color }}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.05} />
-        <directionalLight 
-          position={[10, 10, 5]} 
-          intensity={0.05}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-        />
-
-        {/* Grid helper for reference */}
-        <gridHelper args={[100, 50, TEXTURES.gridColor, TEXTURES.gridColor]} />
-
-        {/* Physics */}
         <Physics gravity={[0, -20, 0]}>
           <Ground />
           <Ball />
         </Physics>
       </Canvas>
 
-      {/* Controls UI */}
       <div style={{
         position: 'absolute',
         top: '16px',
@@ -144,7 +154,8 @@ const App = () => {
         color: 'white',
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
         padding: '16px',
-        borderRadius: '8px'
+        borderRadius: '8px',
+        fontFamily: 'monospace',
       }}>
         <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Controls</p>
         <p style={{ fontSize: '14px' }}>WASD - Move</p>
