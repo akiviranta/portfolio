@@ -1,21 +1,27 @@
-import React, { useRef, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useRef, useEffect, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics, useSphere, usePlane } from '@react-three/cannon';
 import * as THREE from 'three';
 
 // Configuration
 const CONFIG = {
   world: {
-    size: 100,
+    size: 1000,
     color: '#000000',
   },
   ball: {
     radius: 2,
     color: '#cccccc',
     emissiveIntensity: 1,
-    lightIntensity: 500,
-    lightDistance: 30,
+    lightIntensity: 200,
+    lightDistanceMultiplier: 4, // Light extends 4x ball radius
     speed: 20,
+  },
+  trail: {
+    maxPoints: 20,
+    spacing: 2, // Add trail point every N units traveled
+    fadeTime: 3000, // Fade out over 3 seconds
+    lightIntensity: 100,
   },
   camera: {
     position: [0, 15, 20],
@@ -47,9 +53,11 @@ const Ball = () => {
   }));
 
   const visualRef = useRef();
-  const directionalLightRef = useRef();
   const positionRef = useRef([0, 2, 0]);
+  const lastTrailPos = useRef([0, 2, 0]);
+  const [trailPoints, setTrailPoints] = useState([]);
   const keys = useRef({ w: false, a: false, s: false, d: false });
+  const { camera } = useThree();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -96,41 +104,109 @@ const Ball = () => {
       if (velocityMagnitude > 0) {
         const rollSpeed = velocityMagnitude * 0.01;
         visualRef.current.rotateOnAxis(new THREE.Vector3(-vz, 0, vx).normalize(), rollSpeed);
-
-        // Position directional light in movement direction
-        if (directionalLightRef.current) {
-          const lightDistance = CONFIG.ball.radius * 3;
-          directionalLightRef.current.position.set(vx, 0, vz).normalize().multiplyScalar(lightDistance);
-        }
       }
+
+      // Update trail points
+      const dx = positionRef.current[0] - lastTrailPos.current[0];
+      const dz = positionRef.current[2] - lastTrailPos.current[2];
+      const distanceTraveled = Math.sqrt(dx * dx + dz * dz);
+      const now = Date.now();
+
+      setTrailPoints((prev) => {
+        let updatedTrail = prev.filter(
+          (point) => now - point.createdAt < CONFIG.trail.fadeTime
+        );
+
+        if (distanceTraveled >= CONFIG.trail.spacing) {
+          updatedTrail = [
+            ...updatedTrail,
+            {
+              position: [...positionRef.current],
+              createdAt: now,
+            },
+          ];
+
+          if (updatedTrail.length > CONFIG.trail.maxPoints) {
+            updatedTrail.shift();
+          }
+
+          lastTrailPos.current = [...positionRef.current];
+        }
+
+        return updatedTrail;
+      });
+
+      // Update camera to follow ball
+      const cameraOffset = new THREE.Vector3(0, 20, 50);
+      camera.position.lerp(
+        new THREE.Vector3(
+          positionRef.current[0] + cameraOffset.x,
+          positionRef.current[1] + cameraOffset.y,
+          positionRef.current[2] + cameraOffset.z
+        ),
+        0.1
+      );
+      camera.lookAt(positionRef.current[0], positionRef.current[1], positionRef.current[2]);
     }
   });
 
+  // ...existing Ball return code...
+
+  const now = Date.now();
+
   return (
-    <group ref={visualRef}>
-      <pointLight
-        intensity={CONFIG.ball.lightIntensity}
-        distance={CONFIG.ball.lightDistance}
-        color={CONFIG.ball.color}
-      />
-      <directionalLight
-        ref={directionalLightRef}
-        intensity={2}
-        color="#ffffff"
-      />
-      <mesh>
-        <sphereGeometry args={[CONFIG.ball.radius, 32, 32]} />
-        <meshStandardMaterial
+    <>
+      <group ref={visualRef}>
+        <pointLight
+          intensity={CONFIG.ball.lightIntensity}
+          distance={CONFIG.ball.radius * CONFIG.ball.lightDistanceMultiplier}
           color={CONFIG.ball.color}
-          emissive={CONFIG.ball.color}
-          emissiveIntensity={0.3}
-          roughness={0.7}
+          decay={2}
         />
-      </mesh>
-      <mesh ref={physicsRef} visible={false}>
-        <sphereGeometry args={[CONFIG.ball.radius]} />
-      </mesh>
-    </group>
+        <mesh>
+          <sphereGeometry args={[CONFIG.ball.radius, 32, 32]} />
+          <meshStandardMaterial
+            color={CONFIG.ball.color}
+            emissive={CONFIG.ball.color}
+            emissiveIntensity={0.001}
+            roughness={0.9}
+          />
+        </mesh>
+        <mesh ref={physicsRef} visible={false}>
+          <sphereGeometry args={[CONFIG.ball.radius]} />
+        </mesh>
+      </group>
+
+      {/* Trail markers */}
+      {trailPoints.map((point, index) => {
+        const age = now - point.createdAt;
+        const fadeProgress = age / CONFIG.trail.fadeTime;
+        const opacity = 1 - fadeProgress;
+        const emissiveIntensity = opacity * 0.5;
+        const lightIntensity = CONFIG.trail.lightIntensity * opacity;
+
+        return (
+          <group key={`${point.createdAt}-${index}`} position={point.position}>
+            <pointLight
+              intensity={lightIntensity}
+              distance={CONFIG.ball.radius * CONFIG.ball.lightDistanceMultiplier}
+              color={CONFIG.ball.color}
+              decay={2}
+            />
+            <mesh>
+              <sphereGeometry args={[CONFIG.ball.radius * 0.5, 16, 16]} />
+              <meshStandardMaterial
+                color={CONFIG.ball.color}
+                emissive={CONFIG.ball.color}
+                emissiveIntensity={emissiveIntensity}
+                transparent={true}
+                opacity={opacity}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </>
   );
 };
 
@@ -141,6 +217,7 @@ const App = () => {
         camera={{ position: CONFIG.camera.position, fov: CONFIG.camera.fov }}
         style={{ width: '100%', height: '100%', background: CONFIG.world.color }}
       >
+        <ambientLight intensity={0.01} />
         <Physics gravity={[0, -20, 0]}>
           <Ground />
           <Ball />
