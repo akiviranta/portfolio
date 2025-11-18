@@ -8,23 +8,30 @@ const CONFIG = {
   world: {
     size: 1000,
     color: '#000000',
+    ambientLightIntensity: 0.01,
   },
   ball: {
     radius: 2,
     color: '#cccccc',
-    emissiveIntensity: 1,
+    emissiveIntensity: 0.001,
+    roughness: 0.9,
     lightIntensity: 200,
-    lightDistanceMultiplier: 4, // Light extends 4x ball radius
+    lightDistanceMultiplier: 4,
     speed: 20,
+    rollSpeedMultiplier: 0.01,
   },
   trail: {
     maxPoints: 20,
-    spacing: 2, // Add trail point every N units traveled
-    fadeTime: 3000, // Fade out over 3 seconds
+    spacing: 2,
+    fadeTime: 3000,
     lightIntensity: 100,
+    markerSizeRatio: 0.5,
+    emissiveMultiplier: 0.5,
   },
   camera: {
     position: [0, 15, 20],
+    offset: [0, 20, 50],
+    lerpSpeed: 0.1,
     fov: 60,
   },
 };
@@ -102,7 +109,7 @@ const Ball = () => {
 
       const velocityMagnitude = Math.sqrt(vx * vx + vz * vz);
       if (velocityMagnitude > 0) {
-        const rollSpeed = velocityMagnitude * 0.01;
+        const rollSpeed = velocityMagnitude * CONFIG.ball.rollSpeedMultiplier;
         visualRef.current.rotateOnAxis(new THREE.Vector3(-vz, 0, vx).normalize(), rollSpeed);
       }
 
@@ -137,20 +144,17 @@ const Ball = () => {
       });
 
       // Update camera to follow ball
-      const cameraOffset = new THREE.Vector3(0, 20, 50);
       camera.position.lerp(
         new THREE.Vector3(
-          positionRef.current[0] + cameraOffset.x,
-          positionRef.current[1] + cameraOffset.y,
-          positionRef.current[2] + cameraOffset.z
+          positionRef.current[0] + CONFIG.camera.offset[0],
+          positionRef.current[1] + CONFIG.camera.offset[1],
+          positionRef.current[2] + CONFIG.camera.offset[2]
         ),
-        0.1
+        CONFIG.camera.lerpSpeed
       );
       camera.lookAt(positionRef.current[0], positionRef.current[1], positionRef.current[2]);
     }
   });
-
-  // ...existing Ball return code...
 
   const now = Date.now();
 
@@ -168,8 +172,8 @@ const Ball = () => {
           <meshStandardMaterial
             color={CONFIG.ball.color}
             emissive={CONFIG.ball.color}
-            emissiveIntensity={0.001}
-            roughness={0.9}
+            emissiveIntensity={CONFIG.ball.emissiveIntensity}
+            roughness={CONFIG.ball.roughness}
           />
         </mesh>
         <mesh ref={physicsRef} visible={false}>
@@ -182,7 +186,7 @@ const Ball = () => {
         const age = now - point.createdAt;
         const fadeProgress = age / CONFIG.trail.fadeTime;
         const opacity = 1 - fadeProgress;
-        const emissiveIntensity = opacity * 0.5;
+        const emissiveIntensity = opacity * CONFIG.trail.emissiveMultiplier;
         const lightIntensity = CONFIG.trail.lightIntensity * opacity;
 
         return (
@@ -194,7 +198,7 @@ const Ball = () => {
               decay={2}
             />
             <mesh>
-              <sphereGeometry args={[CONFIG.ball.radius * 0.5, 16, 16]} />
+              <sphereGeometry args={[CONFIG.ball.radius * CONFIG.trail.markerSizeRatio, 16, 16]} />
               <meshStandardMaterial
                 color={CONFIG.ball.color}
                 emissive={CONFIG.ball.color}
@@ -217,7 +221,7 @@ const App = () => {
         camera={{ position: CONFIG.camera.position, fov: CONFIG.camera.fov }}
         style={{ width: '100%', height: '100%', background: CONFIG.world.color }}
       >
-        <ambientLight intensity={0.01} />
+        <ambientLight intensity={CONFIG.world.ambientLightIntensity} />
         <Physics gravity={[0, -20, 0]}>
           <Ground />
           <Ball />
