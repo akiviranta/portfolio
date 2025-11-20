@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Text } from '@react-three/drei';
 
-const FloatingText = ({
+const FloatingText = forwardRef(({
     text,
     position = [0, 0, 0],
     rotation = [-Math.PI / 2, 0, 0], // Default flat on ground
@@ -9,9 +9,10 @@ const FloatingText = ({
     color = 'white',
     anchorX = 'center',
     anchorY = 'middle'
-}) => {
+}, ref) => {
     return (
         <Text
+            ref={ref}
             position={position}
             rotation={rotation}
             fontSize={size}
@@ -23,6 +24,6 @@ const FloatingText = ({
             {text}
         </Text>
     );
-};
+});
 
 export default FloatingText;

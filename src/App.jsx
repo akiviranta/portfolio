@@ -89,7 +89,7 @@ const App = () => {
   // Let's assume speed is same for both (0.5).
   // offset = -angle_fraction
 
-  const SPEED = 0.5;
+  const SPEED = 0.1; // Slowed down for readability
 
   // Corrected Angle Logic:
   // Mesh is rotated -PI/2 on X.
@@ -126,7 +126,7 @@ const App = () => {
           <Ball />
 
           {/* Central Hub */}
-          <SpawnCircle radius={HUB_RADIUS} />
+          <SpawnCircle radius={HUB_RADIUS} speed={SPEED} />
 
           {/* Education (Southeast: +X, +Z) -> Fraction 0.375 */}
           <NavigationStripe

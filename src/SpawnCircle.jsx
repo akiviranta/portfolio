@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import FloatingText from './FloatingText';
 import './SweepMaterial'; // Ensure material is registered
 
-const SpawnCircle = ({ radius = 10, color = '#000000', pulseColor = '#ffffff' }) => {
+const SpawnCircle = ({ radius = 10, color = '#000000', pulseColor = '#ffffff', speed = 0.5 }) => {
     const materialRef = useRef();
 
     useFrame((state, delta) => {
@@ -30,16 +30,16 @@ const SpawnCircle = ({ radius = 10, color = '#000000', pulseColor = '#ffffff' })
                     ref={materialRef}
                     color={new THREE.Color(color)}
                     pulseColor={new THREE.Color(pulseColor)}
-                    pulseSpeed={0.5}
+                    pulseSpeed={speed}
                     pulseWidth={0.05} // Sharp sweep
                 />
             </mesh>
 
             {/* Name Text */}
             <FloatingText
-                text="Arttu Kiviranta"
+                text="What do you want to know?"
                 position={[0, 2, 0]} // Floating above the circle
-                size={3}
+                size={2} // Slightly smaller to fit
                 color="#ffffff"
                 anchorX="center"
                 anchorY="middle"
