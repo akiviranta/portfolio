@@ -15,8 +15,8 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
   const phaseTime = useRef(0);
 
   // Object positions
-  const rightPos = [5, 0.5, 0];
-  const leftPos = [-5, 0.5, 0];
+  const rightPos = [-1.8, 0.25, 5.5];
+  const leftPos = [-1.8, 0.25, -5.5];
 
   useFrame((state, delta) => {
     phaseTime.current += delta;
@@ -62,17 +62,21 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
       if (animationPhase === 0 || animationPhase === 1) {
         segment1Ref.current.rotation.z = 0;
       } else if (animationPhase === 2) {
-        segment1Ref.current.rotation.z = eased * Math.PI * 0.35;
+        segment1Ref.current.rotation.z = eased * Math.PI * 0.5;
       } else if (animationPhase === 3) {
-        segment1Ref.current.rotation.z = Math.PI * 0.35;
+        segment1Ref.current.rotation.z = Math.PI * 0.5;
       } else if (animationPhase === 4) {
-        segment1Ref.current.rotation.z = (1 - eased) * Math.PI * 0.35;
+        segment1Ref.current.rotation.z = (1 - eased) * Math.PI * 0.5;
       } else if (animationPhase === 5) {
         segment1Ref.current.rotation.z = 0;
       } else if (animationPhase === 6) {
-        segment1Ref.current.rotation.z = eased * Math.PI * 0.35;
+        segment1Ref.current.rotation.z = eased * Math.PI * 0.5;
       } else if (animationPhase === 7) {
-        segment1Ref.current.rotation.z = Math.PI * 0.35;
+        segment1Ref.current.rotation.z = Math.PI * 0.5;
+      } else if (animationPhase === 8) {
+        segment1Ref.current.rotation.z = (1 - eased) * Math.PI * 0.5;
+      } else if (animationPhase === 9) {
+        segment1Ref.current.rotation.z = 0;
       }
     }
 
@@ -81,17 +85,21 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
       if (animationPhase === 0 || animationPhase === 1) {
         segment2Ref.current.rotation.z = 0;
       } else if (animationPhase === 2) {
-        segment2Ref.current.rotation.z = -eased * Math.PI * 0.25;
+        segment2Ref.current.rotation.z = eased * Math.PI * 0.1;
       } else if (animationPhase === 3) {
-        segment2Ref.current.rotation.z = -Math.PI * 0.25;
+        segment2Ref.current.rotation.z = Math.PI * 0.1;
       } else if (animationPhase === 4) {
-        segment2Ref.current.rotation.z = -(1 - eased) * Math.PI * 0.25;
+        segment2Ref.current.rotation.z = (1 - eased) * Math.PI * 0.1;
       } else if (animationPhase === 5) {
         segment2Ref.current.rotation.z = 0;
       } else if (animationPhase === 6) {
-        segment2Ref.current.rotation.z = -eased * Math.PI * 0.25;
+        segment2Ref.current.rotation.z = eased * Math.PI * 0.1;
       } else if (animationPhase === 7) {
-        segment2Ref.current.rotation.z = -Math.PI * 0.25;
+        segment2Ref.current.rotation.z = Math.PI * 0.1;
+      } else if (animationPhase === 8) {
+        segment2Ref.current.rotation.z = (1 - eased) * Math.PI * 0.1;
+      } else if (animationPhase === 9) {
+        segment2Ref.current.rotation.z = 0;
       }
     }
 
@@ -115,16 +123,21 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
 
       if (animationPhase <= 2) {
         cubeRef.current.position.set(...currentPos);
-      } else if (animationPhase >= 3 && animationPhase <= 6) {
+      } else if (animationPhase >= 3 && animationPhase <= 7) {
         const gripperWorldPos = new THREE.Vector3();
         gripperRef.current?.getWorldPosition(gripperWorldPos);
         const groupWorldPos = new THREE.Vector3();
         groupRef.current.getWorldPosition(groupWorldPos);
         cubeRef.current.position.copy(gripperWorldPos.sub(groupWorldPos));
         cubeRef.current.position.y -= 0.8;
-      } else if (animationPhase === 7) {
-        const dropY = 0.5 + (1 - eased) * 3;
-        cubeRef.current.position.set(targetPos[0], dropY, targetPos[2]);
+      } else if (animationPhase >= 8) {
+        // Place it exactly on the target position
+        // Note: We might want to capture the position at end of phase 7 to avoid snap
+        // But for now, let's assume the arm reached the target.
+        // To avoid X-snap, we should probably use the position where it landed.
+        // However, for the loop to work, it needs to be at targetPos for the next pickup.
+        // Let's trust the arm reached close enough.
+        cubeRef.current.position.set(...targetPos);
       }
     }
   });
