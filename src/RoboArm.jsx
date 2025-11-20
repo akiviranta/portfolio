@@ -15,8 +15,8 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
   const phaseTime = useRef(0);
 
   // Object positions
-  const rightPos = [-1.8, 0.25, 5.5];
-  const leftPos = [-1.8, 0.25, -5.5];
+  const rightPos = [-1.8, 0.4, 5.5];
+  const leftPos = [-1.8, 0.4, -5.5];
 
   useFrame((state, delta) => {
     phaseTime.current += delta;
@@ -128,8 +128,18 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
         gripperRef.current?.getWorldPosition(gripperWorldPos);
         const groupWorldPos = new THREE.Vector3();
         groupRef.current.getWorldPosition(groupWorldPos);
-        cubeRef.current.position.copy(gripperWorldPos.sub(groupWorldPos));
-        cubeRef.current.position.y -= 0.8;
+
+        // Calculate offset based on gripper orientation
+        const gripperQuaternion = new THREE.Quaternion();
+        gripperRef.current.getWorldQuaternion(gripperQuaternion);
+
+        // Offset to place object at the tip of the fingers
+        // Fingers are 1 unit long, centered at 0. So tip is at +/- 0.5.
+        // Assuming we want it slightly below the center.
+        const offset = new THREE.Vector3(0, -0.15, 0);
+        offset.applyQuaternion(gripperQuaternion);
+
+        cubeRef.current.position.copy(gripperWorldPos.sub(groupWorldPos).add(offset));
       } else if (animationPhase >= 8) {
         // Place it exactly on the target position
         // Note: We might want to capture the position at end of phase 7 to avoid snap
