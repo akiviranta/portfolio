@@ -120,16 +120,48 @@ const Ball = () => {
                 return updatedTrail;
             });
 
-            // Update camera to follow ball
-            camera.position.lerp(
-                new THREE.Vector3(
+            // Dynamic Camera Logic
+            const distFromCenter = Math.sqrt(
+                positionRef.current[0] * positionRef.current[0] +
+                positionRef.current[2] * positionRef.current[2]
+            );
+
+            const SPAWN_RADIUS = 15;
+            const TOP_DOWN_POS = new THREE.Vector3(0, 60, 10); // High up, slightly offset Z
+            const TOP_DOWN_LOOK = new THREE.Vector3(0, 0, 0);
+
+            let targetPos, targetLookAt;
+
+            if (distFromCenter < SPAWN_RADIUS) {
+                // Top-Down View
+                targetPos = TOP_DOWN_POS;
+                targetLookAt = TOP_DOWN_LOOK;
+            } else {
+                // Follow View
+                targetPos = new THREE.Vector3(
                     positionRef.current[0] + CONFIG.camera.offset[0],
                     positionRef.current[1] + CONFIG.camera.offset[1],
                     positionRef.current[2] + CONFIG.camera.offset[2]
-                ),
-                CONFIG.camera.lerpSpeed
-            );
-            camera.lookAt(positionRef.current[0], positionRef.current[1], positionRef.current[2]);
+                );
+                targetLookAt = new THREE.Vector3(
+                    positionRef.current[0],
+                    positionRef.current[1],
+                    positionRef.current[2]
+                );
+            }
+
+            // Smoothly interpolate camera position
+            camera.position.lerp(targetPos, CONFIG.camera.lerpSpeed);
+
+            // Smoothly interpolate lookAt
+            // We can't lerp lookAt directly, so we lerp the quaternion or use a dummy target
+            // A simple way is to maintain a currentLookAt vector and lerp that
+            if (!camera.userData.currentLookAt) {
+                camera.userData.currentLookAt = new THREE.Vector3().copy(targetLookAt);
+            }
+
+            camera.userData.currentLookAt.lerp(targetLookAt, CONFIG.camera.lerpSpeed);
+            camera.lookAt(camera.userData.currentLookAt);
         }
     });
 

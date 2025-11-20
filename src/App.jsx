@@ -3,6 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import { Physics, usePlane } from '@react-three/cannon';
 import RobotArm from './RoboArm';
 import Ball from './Ball';
+import FloatingText from './FloatingText';
+import NavigationStripe from './NavigationStripe';
 
 // Configuration
 const CONFIG = {
@@ -12,7 +14,7 @@ const CONFIG = {
     ambientLightIntensity: 0.01,
   },
   camera: {
-    position: [0, 15, 20],
+    position: [0, 40, 40], // Further out and up
     fov: 60,
   },
 };
@@ -33,6 +35,9 @@ const Ground = () => {
 };
 
 const App = () => {
+  // Robot Arm Position
+  const robotArmPos = [40, 0, 40];
+
   return (
     <div style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden' }}>
       <Canvas
@@ -43,7 +48,25 @@ const App = () => {
         <Physics gravity={[0, -20, 0]}>
           <Ground />
           <Ball />
-          <RobotArm position={[20, 0, 20]}></RobotArm>
+
+          {/* Spawn Area Text */}
+          <FloatingText
+            text="Arttu Kiviranta"
+            position={[0, 0.1, -5]}
+            size={3}
+            color="#ffffff"
+          />
+
+          {/* Navigation to Robot Arm */}
+          <NavigationStripe
+            start={[8, 0.05, 8]}
+            end={robotArmPos}
+            width={4}
+            label="Education"
+            pulseSpeed={0.3}
+          />
+
+          <RobotArm position={robotArmPos} />
         </Physics>
       </Canvas>
 
