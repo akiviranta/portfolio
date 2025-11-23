@@ -5,7 +5,7 @@ const FloatingText = forwardRef(({
     text,
     position = [0, 0, 0],
     rotation = [-Math.PI / 2, 0, 0], // Default flat on ground
-    size = 1,
+    size = 2,
     color = 'white',
     anchorX = 'center',
     anchorY = 'middle'

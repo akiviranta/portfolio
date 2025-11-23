@@ -10,9 +10,11 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
   const cubeRef = useRef();
   const groupRef = useRef();
 
-  const [animationPhase, setAnimationPhase] = useState(0);
-  const [objectOnRight, setObjectOnRight] = useState(true);
+  const animationPhase = useRef(0);
+  const objectOnRight = useRef(true);
   const phaseTime = useRef(0);
+  const lastAngle = useRef(0);
+  const isFirstLoop = useRef(true);
 
   // Object positions
   const rightPos = [-1.8, 0.4, 5.5];
@@ -24,92 +26,101 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
     // Animation cycle: 0=idle, 1=rotate to pickup, 2=reach down, 3=grab, 4=lift, 5=rotate to place, 6=lower, 7=release
     const phaseDurations = [0.5, 1, 1, 0.3, 1, 1.5, 1, 0.3];
 
-    if (phaseTime.current > phaseDurations[animationPhase]) {
+    if (phaseTime.current > phaseDurations[animationPhase.current]) {
       phaseTime.current = 0;
-      if (animationPhase === 7) {
-        setObjectOnRight((prev) => !prev);
-        setAnimationPhase(0);
+      if (animationPhase.current === 7) {
+        // Capture the final rotation before resetting
+        if (baseRef.current) {
+          lastAngle.current = baseRef.current.rotation.y;
+        }
+        isFirstLoop.current = false;
+        objectOnRight.current = !objectOnRight.current;
+        animationPhase.current = 0;
       } else {
-        setAnimationPhase((prev) => prev + 1);
+        animationPhase.current += 1;
       }
     }
 
-    const t = phaseTime.current / phaseDurations[animationPhase];
+    const t = phaseTime.current / phaseDurations[animationPhase.current];
     const eased = Math.sin(t * Math.PI * 0.5);
 
-    const pickupAngle = objectOnRight ? Math.PI * 0.4 : -Math.PI * 0.4;
-    const placeAngle = objectOnRight ? -Math.PI * 0.4 : Math.PI * 0.4;
+    const pickupAngle = objectOnRight.current ? Math.PI * 0.4 : -Math.PI * 0.4;
+    const placeAngle = objectOnRight.current ? -Math.PI * 0.4 : Math.PI * 0.4;
 
     // Base rotation
     if (baseRef.current) {
-      if (animationPhase === 0) {
-        baseRef.current.rotation.y = 0;
-      } else if (animationPhase === 1) {
-        baseRef.current.rotation.y = eased * pickupAngle;
-      } else if (animationPhase >= 2 && animationPhase <= 3) {
+      if (animationPhase.current === 0) {
+        baseRef.current.rotation.y = lastAngle.current;
+      } else if (animationPhase.current === 1) {
+        baseRef.current.rotation.y = lastAngle.current + eased * (pickupAngle - lastAngle.current);
+      } else if (animationPhase.current >= 2 && animationPhase.current <= 3) {
         baseRef.current.rotation.y = pickupAngle;
-      } else if (animationPhase === 4) {
+      } else if (animationPhase.current === 4) {
         baseRef.current.rotation.y = pickupAngle;
-      } else if (animationPhase === 5) {
+      } else if (animationPhase.current === 5) {
         baseRef.current.rotation.y = pickupAngle + eased * (placeAngle - pickupAngle);
-      } else if (animationPhase >= 6) {
+      } else if (animationPhase.current >= 6) {
         baseRef.current.rotation.y = placeAngle;
       }
     }
 
     // First segment (shoulder)
     if (segment1Ref.current) {
-      if (animationPhase === 0 || animationPhase === 1) {
+      if (animationPhase.current === 0) {
+        segment1Ref.current.rotation.z = isFirstLoop.current ? 0 : (1 - eased) * Math.PI * 0.5;
+      } else if (animationPhase.current === 1) {
         segment1Ref.current.rotation.z = 0;
-      } else if (animationPhase === 2) {
+      } else if (animationPhase.current === 2) {
         segment1Ref.current.rotation.z = eased * Math.PI * 0.5;
-      } else if (animationPhase === 3) {
+      } else if (animationPhase.current === 3) {
         segment1Ref.current.rotation.z = Math.PI * 0.5;
-      } else if (animationPhase === 4) {
+      } else if (animationPhase.current === 4) {
         segment1Ref.current.rotation.z = (1 - eased) * Math.PI * 0.5;
-      } else if (animationPhase === 5) {
+      } else if (animationPhase.current === 5) {
         segment1Ref.current.rotation.z = 0;
-      } else if (animationPhase === 6) {
+      } else if (animationPhase.current === 6) {
         segment1Ref.current.rotation.z = eased * Math.PI * 0.5;
-      } else if (animationPhase === 7) {
+      } else if (animationPhase.current === 7) {
         segment1Ref.current.rotation.z = Math.PI * 0.5;
-      } else if (animationPhase === 8) {
+      } else if (animationPhase.current === 8) {
         segment1Ref.current.rotation.z = (1 - eased) * Math.PI * 0.5;
-      } else if (animationPhase === 9) {
+      } else if (animationPhase.current === 9) {
         segment1Ref.current.rotation.z = 0;
       }
     }
 
     // Second segment (elbow)
     if (segment2Ref.current) {
-      if (animationPhase === 0 || animationPhase === 1) {
+      if (animationPhase.current === 0) {
+        segment2Ref.current.rotation.z = isFirstLoop.current ? 0 : (1 - eased) * Math.PI * 0.1;
+      } else if (animationPhase.current === 1) {
         segment2Ref.current.rotation.z = 0;
-      } else if (animationPhase === 2) {
+      } else if (animationPhase.current === 2) {
         segment2Ref.current.rotation.z = eased * Math.PI * 0.1;
-      } else if (animationPhase === 3) {
+      } else if (animationPhase.current === 3) {
         segment2Ref.current.rotation.z = Math.PI * 0.1;
-      } else if (animationPhase === 4) {
+      } else if (animationPhase.current === 4) {
         segment2Ref.current.rotation.z = (1 - eased) * Math.PI * 0.1;
-      } else if (animationPhase === 5) {
+      } else if (animationPhase.current === 5) {
         segment2Ref.current.rotation.z = 0;
-      } else if (animationPhase === 6) {
+      } else if (animationPhase.current === 6) {
         segment2Ref.current.rotation.z = eased * Math.PI * 0.1;
-      } else if (animationPhase === 7) {
+      } else if (animationPhase.current === 7) {
         segment2Ref.current.rotation.z = Math.PI * 0.1;
-      } else if (animationPhase === 8) {
+      } else if (animationPhase.current === 8) {
         segment2Ref.current.rotation.z = (1 - eased) * Math.PI * 0.1;
-      } else if (animationPhase === 9) {
+      } else if (animationPhase.current === 9) {
         segment2Ref.current.rotation.z = 0;
       }
     }
 
     // Gripper
     if (gripperRef.current) {
-      if (animationPhase === 3) {
+      if (animationPhase.current === 3) {
         gripperRef.current.scale.x = 1 - eased * 0.5;
-      } else if (animationPhase >= 4 && animationPhase <= 6) {
+      } else if (animationPhase.current >= 4 && animationPhase.current <= 6) {
         gripperRef.current.scale.x = 0.5;
-      } else if (animationPhase === 7) {
+      } else if (animationPhase.current === 7) {
         gripperRef.current.scale.x = 0.5 + eased * 0.5;
       } else {
         gripperRef.current.scale.x = 1;
@@ -118,12 +129,12 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
 
     // Cube position
     if (cubeRef.current && groupRef.current) {
-      const currentPos = objectOnRight ? rightPos : leftPos;
-      const targetPos = objectOnRight ? leftPos : rightPos;
+      const currentPos = objectOnRight.current ? rightPos : leftPos;
+      const targetPos = objectOnRight.current ? leftPos : rightPos;
 
-      if (animationPhase <= 2) {
+      if (animationPhase.current <= 2) {
         cubeRef.current.position.set(...currentPos);
-      } else if (animationPhase >= 3 && animationPhase <= 7) {
+      } else if (animationPhase.current >= 3 && animationPhase.current <= 7) {
         const gripperWorldPos = new THREE.Vector3();
         gripperRef.current?.getWorldPosition(gripperWorldPos);
         const groupWorldPos = new THREE.Vector3();
@@ -140,7 +151,7 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
         offset.applyQuaternion(gripperQuaternion);
 
         cubeRef.current.position.copy(gripperWorldPos.sub(groupWorldPos).add(offset));
-      } else if (animationPhase >= 8) {
+      } else if (animationPhase.current >= 8) {
         // Place it exactly on the target position
         // Note: We might want to capture the position at end of phase 7 to avoid snap
         // But for now, let's assume the arm reached the target.
