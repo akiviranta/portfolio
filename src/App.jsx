@@ -2,12 +2,12 @@ import React, { useState, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics, usePlane } from '@react-three/cannon';
 import * as THREE from 'three';
-import RobotArm from './RoboArm';
-import Ball from './Ball';
-import FloatingText from './FloatingText';
-import NavigationStripe from './NavigationStripe';
-import SpawnCircle from './SpawnCircle';
-import BlogOverlay from './components/BlogOverlay';
+import RobotArm from './components/objects/RoboArm';
+import Ball from './components/player/Ball';
+import FloatingText from './components/world/FloatingText';
+import NavigationStripe from './components/world/NavigationStripe';
+import SpawnCircle from './components/world/SpawnCircle';
+import BlogOverlay from './components/ui/BlogOverlay';
 
 // Configuration
 const CONFIG = {

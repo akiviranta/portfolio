@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import FloatingText from './FloatingText';
-import './SweepMaterial'; // Ensure material is registered
+import '../../materials/SweepMaterial'; // Ensure material is registered
 
 const SpawnCircle = ({ radius = 10, color = '#000000', pulseColor = '#ffffff', speed = 0.5 }) => {
     const materialRef = useRef();

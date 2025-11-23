@@ -3,7 +3,7 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame, extend } from '@react-three/fiber';
 import * as THREE from 'three';
 import FloatingText from './FloatingText';
-import './PulseMaterial'; // Ensure the extend is run
+import '../../materials/PulseMaterial'; // Ensure the extend is run
 
 const NavigationStripe = ({
     start = [0, 0, 0],
