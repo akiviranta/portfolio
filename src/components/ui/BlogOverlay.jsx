@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 const BlogOverlay = ({ isOpen, onClose, initialProject }) => {
-    const [view, setView] = useState('about'); // 'about', 'posts', 'project'
+    const [view, setView] = useState('about'); // 'about', 'posts', 'project', 'read'
     const [activeProject, setActiveProject] = useState(null);
+    const [activePost, setActivePost] = useState(null);
 
     // Reset view when opened
     useEffect(() => {
@@ -16,15 +17,19 @@ const BlogOverlay = ({ isOpen, onClose, initialProject }) => {
         }
     }, [isOpen, initialProject]);
 
-    // Mock Data
-    const posts = [
-        { id: 1, title: "Building a 3D Portfolio with React Three Fiber", date: "Nov 20, 2023", url: "https://example.com/post1" },
-        { id: 2, title: "The Math Behind Inverse Kinematics", date: "Oct 15, 2023", url: "https://example.com/post2" },
-        { id: 3, title: "Why I Love WebGL", date: "Sep 01, 2023", url: "https://example.com/post3" },
-    ];
+    const [posts, setPosts] = useState([]);
+
+    // Fetch posts
+    useEffect(() => {
+        fetch('/content/posts.json')
+            .then(res => res.json())
+            .then(data => setPosts(data))
+            .catch(err => console.error("Failed to load posts:", err));
+    }, []);
 
     const handlePostClick = (post) => {
-        window.open(post.url, '_blank');
+        setActivePost(post);
+        setView('read');
     };
 
     const renderContent = () => {
@@ -41,6 +46,18 @@ const BlogOverlay = ({ isOpen, onClose, initialProject }) => {
                 );
             }
             return <div style={{ padding: '40px', color: 'white' }}>Project Not Found</div>;
+        }
+
+        if (view === 'read' && activePost) {
+            return (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <iframe
+                        src={activePost.url}
+                        style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
+                        title={activePost.title}
+                    />
+                </div>
+            );
         }
 
         if (view === 'posts') {
@@ -141,17 +158,37 @@ const BlogOverlay = ({ isOpen, onClose, initialProject }) => {
                 background: 'rgba(255, 255, 255, 0.02)',
             }}>
                 {/* Left: Brand/Home */}
-                <div
-                    onClick={() => setView('about')}
-                    style={{
-                        fontSize: '20px',
-                        fontWeight: 600,
-                        color: 'white',
-                        cursor: 'pointer',
-                        letterSpacing: '-0.5px'
-                    }}
-                >
-                    Arttu Kiviranta
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    {view === 'read' && (
+                        <button
+                            onClick={() => setView('posts')}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: 0,
+                                fontWeight: 500
+                            }}
+                        >
+                            ← Back
+                        </button>
+                    )}
+                    <div
+                        onClick={() => setView('about')}
+                        style={{
+                            fontSize: '20px',
+                            fontWeight: 600,
+                            color: 'white',
+                            cursor: 'pointer',
+                            letterSpacing: '-0.5px'
+                        }}
+                    >
+                        Arttu Kiviranta
+                    </div>
                 </div>
 
                 {/* Center: Navigation */}
@@ -175,9 +212,9 @@ const BlogOverlay = ({ isOpen, onClose, initialProject }) => {
                     <button
                         onClick={() => setView('posts')}
                         style={{
-                            background: view === 'posts' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                            background: (view === 'posts' || view === 'read') ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                             border: 'none',
-                            color: view === 'posts' ? 'white' : 'rgba(255, 255, 255, 0.6)',
+                            color: (view === 'posts' || view === 'read') ? 'white' : 'rgba(255, 255, 255, 0.6)',
                             padding: '8px 20px',
                             borderRadius: '20px',
                             cursor: 'pointer',
