@@ -4,7 +4,7 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 
 // SO-101 Robot Arm Component
-const RobotArm = ({ position = [20, 0, 20], onOpenBlog, playerPosRef }) => {
+const RobotArm = ({ position = [20, 0, 20], onOpenBlog, playerPosRef, isBlogOpen }) => {
   const baseRef = useRef();
   const segment1Ref = useRef();
   const segment2Ref = useRef();
@@ -280,7 +280,7 @@ const RobotArm = ({ position = [20, 0, 20], onOpenBlog, playerPosRef }) => {
       <pointLight position={[0, 8, 0]} intensity={500} distance={25} color="#cccccc" decay={2} />
 
       {/* Interaction Prompt */}
-      {inRange && (
+      {inRange && !isBlogOpen && (
         <Html position={[0, 8, 0]} center>
           <div style={{
             background: 'rgba(0, 0, 0, 0.8)',
