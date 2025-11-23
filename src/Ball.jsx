@@ -29,7 +29,7 @@ const CONFIG = {
     },
 };
 
-const Ball = () => {
+const Ball = (props) => {
     const [physicsRef, api] = useSphere(() => ({
         mass: 1,
         args: [CONFIG.ball.radius],
@@ -65,9 +65,12 @@ const Ball = () => {
     useEffect(() => {
         const unsubscribe = api.position.subscribe((p) => {
             positionRef.current = p;
+            if (props.ballPosRef) {
+                props.ballPosRef.current.set(p[0], p[1], p[2]);
+            }
         });
         return unsubscribe;
-    }, [api]);
+    }, [api, props.ballPosRef]);
 
     useFrame(() => {
         let vx = 0;

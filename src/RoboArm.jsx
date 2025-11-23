@@ -1,8 +1,10 @@
-import React, { useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React, { useRef, useState, useEffect } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+
 // SO-101 Robot Arm Component
-const RobotArm = ({ position = [20, 0, 20] }) => {
+const RobotArm = ({ position = [20, 0, 20], onOpenBlog, playerPosRef }) => {
   const baseRef = useRef();
   const segment1Ref = useRef();
   const segment2Ref = useRef();
@@ -16,11 +18,31 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
   const lastAngle = useRef(0);
   const isFirstLoop = useRef(true);
 
+  // Interaction State
+  const [inRange, setInRange] = useState(false);
+  const { camera } = useThree();
+
   // Object positions
   const rightPos = [-1.8, 0.4, 5.5];
   const leftPos = [-1.8, 0.4, -5.5];
 
   useFrame((state, delta) => {
+    // Proximity Check
+    if (groupRef.current && playerPosRef) {
+      // We need world position of the arm group
+      const worldPos = new THREE.Vector3();
+      groupRef.current.getWorldPosition(worldPos);
+
+      // Check distance to player (ball) instead of camera
+      const dist = worldPos.distanceTo(playerPosRef.current);
+
+      if (dist < 15) { // Activation range
+        if (!inRange) setInRange(true);
+      } else {
+        if (inRange) setInRange(false);
+      }
+    }
+
     phaseTime.current += delta;
 
     // Animation cycle: 0=idle, 1=rotate to pickup, 2=reach down, 3=grab, 4=lift, 5=rotate to place, 6=lower, 7=release
@@ -163,6 +185,16 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
     }
   });
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (inRange && e.key.toLowerCase() === 'r') {
+        if (onOpenBlog) onOpenBlog();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inRange, onOpenBlog]);
+
   return (
     <group ref={groupRef} position={position}>
       {/* Base platform */}
@@ -246,6 +278,26 @@ const RobotArm = ({ position = [20, 0, 20] }) => {
 
       {/* Main light on robot */}
       <pointLight position={[0, 8, 0]} intensity={500} distance={25} color="#cccccc" decay={2} />
+
+      {/* Interaction Prompt */}
+      {inRange && (
+        <Html position={[0, 8, 0]} center>
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontFamily: 'sans-serif',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)',
+          }}>
+            <p style={{ margin: 0, fontWeight: 'bold' }}>RoboArm Control</p>
+            <p style={{ margin: 0, fontSize: '0.8em', opacity: 0.8 }}>Press R to Open Blog</p>
+          </div>
+        </Html>
+      )}
     </group>
   );
 };

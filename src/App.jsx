@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics, usePlane } from '@react-three/cannon';
+import * as THREE from 'three';
 import RobotArm from './RoboArm';
 import Ball from './Ball';
 import FloatingText from './FloatingText';
 import NavigationStripe from './NavigationStripe';
 import SpawnCircle from './SpawnCircle';
+import BlogOverlay from './components/BlogOverlay';
 
 // Configuration
 const CONFIG = {
@@ -36,6 +38,12 @@ const Ground = () => {
 };
 
 const App = () => {
+  const [blogOpen, setBlogOpen] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("https://example.com"); // Default or dynamic
+
+  // Shared ref to track ball position without re-renders
+  const ballPosRef = useRef(new THREE.Vector3(0, 0, 0));
+
   // Robot Arm Position (End of Education path)
   // Education is Southeast: (+X, +Z)
   // Let's say length is 100.
@@ -123,7 +131,7 @@ const App = () => {
         <ambientLight intensity={CONFIG.world.ambientLightIntensity} />
         <Physics gravity={[0, -20, 0]}>
           <Ground />
-          <Ball />
+          <Ball ballPosRef={ballPosRef} />
 
           {/* Central Hub */}
           <SpawnCircle radius={HUB_RADIUS} speed={SPEED} />
@@ -137,7 +145,11 @@ const App = () => {
             pulseSpeed={SPEED}
             pulseOffset={getOffset(0.375)}
           >
-            <RobotArm position={[0, 0, 0]} />
+            <RobotArm
+              position={[0, 0, 0]}
+              onOpenBlog={() => setBlogOpen(true)}
+              playerPosRef={ballPosRef}
+            />
           </NavigationStripe>
 
           {/* Athletics (Northwest: -X, -Z) -> Fraction 0.875 */}
@@ -181,10 +193,17 @@ const App = () => {
         padding: '16px',
         borderRadius: '8px',
         fontFamily: 'monospace',
+        pointerEvents: 'none', // Let clicks pass through
       }}>
         <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Controls</p>
         <p style={{ fontSize: '14px' }}>WASD - Move</p>
       </div>
+
+      <BlogOverlay
+        isOpen={blogOpen}
+        onClose={() => setBlogOpen(false)}
+        url={currentUrl}
+      />
     </div>
   );
 };
